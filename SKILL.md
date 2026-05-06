@@ -1,7 +1,7 @@
 ---
 name: gh-daily-trending
-description: Fetches GitHub trending repositories (daily/weekly/monthly) using Playwright and generates a formatted markdown table with stars, language, description and repository links. Use when the user asks about GitHub trending, top repositories today, or wants a daily tech trending report.
-version: "1.0"
+description: "Fetches GitHub trending repositories (daily/weekly/monthly) using Playwright and generates a formatted markdown table with stars, language, description and repository links. Use when the user asks about GitHub trending, top repositories today, or wants a daily tech trending report."
+version: "2.0"
 author: Judy (朱迪)
 license: MIT
 ---
@@ -30,24 +30,17 @@ github trending
 
 ### Step 1: Check Playwright
 
-Verify playwright is available:
-```bash
-playwright --version
-node -e "require('/usr/lib/node_modules/playwright')" 2>/dev/null && echo "OK"
-```
+Verify Playwright is available before running. If not available, install it following the Playwright documentation.
 
 ### Step 2: Fetch Trending
 
-Run the fetcher script:
-```bash
-node /root/.openclaw/workspace/.agents/skills/gh-daily-trending/scripts/fetch_trending.js --since daily
-```
+Use Playwright to navigate to GitHub Trending page and extract repository data.
 
-Supported `--since` values: `daily`, `weekly`, `monthly`
+The page URL is: https://github.com/trending (with optional `?since=daily|weekly|monthly`)
 
 ### Step 3: Output Format
 
-The script returns a formatted markdown table:
+Present the data as a formatted markdown table:
 
 ```markdown
 **🌞 GitHub 今日 Trending · YYYY-MM-DD**
@@ -67,11 +60,11 @@ The script returns a formatted markdown table:
 
 | # | 仓库 | 语言 | ⭐ | 链接 |
 |---|---|---|---|---|
-| 1 | codecrafters-io/build-your-own-x | Markdown | 495,793 | https://github.com/codecrafters-io/build-your-own-x |
+| 1 | codecrafters-io/build-your-own-x | Markdown | 495,793 | https://github.com/codecraftars-io/build-your-own-x |
 ...
 
 ## Troubleshooting
 
-- **"Module not found"**: Run `npm install -g playwright` and ensure chromium is installed
+- **Playwright missing**: Ensure Playwright and Chromium are installed on the system
 - **Empty results**: GitHub may have changed the page structure; check if `article` elements are still present
-- **Timeout**: Increase `waitUntil: 'networkidle'` timeout in the script
+- **Timeout**: Increase the page load timeout
