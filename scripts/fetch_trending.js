@@ -2,19 +2,26 @@
 /**
  * GitHub Trending Fetcher
  * Fetches trending repositories from github.com/trending using Playwright
- * 
+ *
  * Usage:
- *   node fetch_trending.js --since daily    # today's trending
- *   node fetch_trending.js --since weekly   # this week's trending
- *   node fetch_trending.js --since monthly  # this month's trending
+ *   node fetch_trending.js --since daily              # markdown table (legacy)
+ *   node fetch_trending.js --since weekly
+ *   node fetch_trending.js --since monthly
+ *   node fetch_trending.js --since daily --json       # JSON output (for LLM enrichment)
  */
 
 const { chromium } = require('/usr/lib/node_modules/playwright');
-const path = require('path');
 
-const since = process.argv.includes('--since=weekly') ? 'weekly'
-  : process.argv.includes('--since=monthly') ? 'monthly'
-  : 'daily';
+const args = process.argv.slice(2);
+function getArg(name, fallback) {
+  const eq = args.find(a => a.startsWith(`--${name}=`));
+  if (eq) return eq.split('=')[1];
+  const idx = args.indexOf(`--${name}`);
+  if (idx !== -1 && args[idx + 1] && !args[idx + 1].startsWith('--')) return args[idx + 1];
+  return fallback;
+}
+const since = ['daily', 'weekly', 'monthly'].includes(getArg('since')) ? getArg('since') : 'daily';
+const asJson = args.includes('--json');
 
 const url = `https://github.com/trending${since !== 'daily' ? `?since=${since}` : ''}`;
 
@@ -48,13 +55,36 @@ const url = `https://github.com/trending${since !== 'daily' ? `?since=${since}` 
     const labels = { daily: '今日', weekly: '本周', monthly: '本月' };
     const label = labels[since];
 
+    if (asJson) {
+      console.log(JSON.stringify({ date, since, label, count: repos.length, repos }, null, 2));
+      return;
+    }
+
+    const ICON_POOL = ['🚀','✨','🔥','⚡','💎','🌟','🎯','🛠️','🧩','🧠','🤖','📦','🔧','🔬','🧪','🪄','🛸','🦾','🦄','🐙','🐍','🦊','🐳','🪐','🌈','🎨','📡','🧭','🗺️','🧰','⚙️','🪛','🔭','🧬','🪶','🔮','💡','📊','🛰️','🧱','🏗️','🎮','📚','🎬','🎼','🌐','🎭','🪙','🧮','🛎️'];
+    function shuffled(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    let icons = shuffled(ICON_POOL);
+    function nextIcon() {
+      if (icons.length === 0) icons = shuffled(ICON_POOL);
+      return icons.pop();
+    }
+
     console.log(`**${label} GitHub Trending · ${date}**\n`);
-    console.log(`| # | 仓库 | 语言 | ⭐ | 链接 |`);
-    console.log(`|---|---|---|---|---|`);
     repos.forEach((r, i) => {
-      console.log(`| ${i+1} | ${r.name} | ${r.lang} | ${r.stars} | ${r.href} |`);
+      const desc = (r.desc || '').slice(0, 200);
+      const icon = nextIcon();
+      console.log(`${i+1}. ${icon} **${r.name}** · \`${r.lang}\` · ⭐ ${r.stars}`);
+      if (desc) console.log(`   📝 ${desc}`);
+      console.log(`   🔗 ${r.href}`);
+      console.log('');
     });
-    console.log(`\n---\n数据来源: github.com/trending (${since})`);
+    console.log(`---\n数据来源: github.com/trending (${since})`);
     console.log(`\n__REPOS_COUNT__:${repos.length}`);
 
   } catch (err) {
